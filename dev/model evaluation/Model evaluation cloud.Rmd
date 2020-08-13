@@ -1,0 +1,154 @@
+---
+title: "**Model evaluering**"
+output: pdf_document
+params:
+  model_nyt: ""
+  test_data: ""
+  model_folder: ""
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::knit_hooks$set(inline = function(x) {
+  prettyNum(x, big.mark=".", decimal.mark = ",")})
+
+library(dplyr)
+library(keras)
+library(knitr)
+library(kableExtra)
+library(rjson)
+```
+
+
+## Nyt i modellen
+
+`r params$model_nyt`
+
+
+## Evaluering af model
+
+```{r, henter_model}
+model_sti <- paste0("~/Data Science/KommaModelv1/runs/", params$model_folder)
+model <- keras::load_model_hdf5(paste0(model_sti, "/model.h5"))
+```
+
+
+```{r, klargor_data}
+#test_scores_index <- params$test_scor_data$test_scores_index
+#test_scores_number <- params$test_scor_data$test_scores_number
+
+# test data
+test_word <- params$test_data$test_word
+test_word_class <- params$test_data$test_word_class
+
+# test target
+index_target_test <- params$test_data$index_target_test
+num_target_test <- params$test_data$num_target_test
+
+# prediction
+test_scores <- model %>% predict(list(test_word, test_word_class))
+
+test_scores_index <- test_scores[[1]]
+test_scores_number <- test_scores[[2]]
+
+# evaluerer accuracy på antallet af kommaer
+eval_number_acc <- data.frame(label = num_target_test,
+                              pred = pmax(round(test_scores_number), 0))
+
+eval_number_acc$corret_classified <- eval_number_acc$label == eval_number_acc$pred
+
+
+comma_index_pred <- matrix(0, nrow(test_scores_index), ncol(test_scores_index))
+comma_index_pred <- asplit(comma_index_pred, 1)
+
+comma_pos <- mapply(x = asplit(test_scores_index, 1),
+                    y = eval_number_acc$pred,
+                     function(x, y) {
+                       if (y > 0) doBy::which.maxn(x, y) else 0
+                      }
+                    )
+
+comma_index_pred <- mapply(x = comma_index_pred, y = comma_pos,
+                           function(x, y) {x[y] <- 1; return(x)},
+                           SIMPLIFY = FALSE)
+
+comma_index_target <- asplit(index_target_test, 1)
+
+acc <- mapply(x = comma_index_pred, y = comma_index_target,
+              function(x, y) {
+                all(x == y)
+              })
+```
+
+
+Modellen er testet på `r nrow(eval_number_acc)` sætninger. I **`r round(prop.table(table(acc)), 3)[[2]] * 100` %** af sætningerne bliver kommaet sat korrekt og modellen identificerer det rigtige antal kommaer i **`r round(prop.table(table(eval_number_acc$corret_classified)), 3)[[2]] * 100`** % af sætningerne. 
+
+Baseline for modellen kan findes ved at se på den procenvise fordeling af kommaer og altid gætte på det antal kommaer, som er mest normalt. Hvis det mest normale antal kommaer i en sætning eksempelvis er 0, og det fremgår i 60 % af alle sætninger, så vil baseline sandsynligheden være 60 %. Her er vist fordelingen af antallet af kommaer i testdata.  
+```{r, results='asis'}
+kable(t(round(prop.table(table(num_target_test)), 3)), format = "latex") %>% kable_styling(position = "center")
+```
+En anden type baseline er den menneskelige. I hvor høj en andel vil et menneste kunne sætte det korrekte antal kommaer. Svaret er nok 100 %, eller meget tæt på (givet man forstår de danske kommaregler).  
+
+Nedenfor er modellens accuaracy vist fordelt på antallet af kommaer i hver sætning.
+```{r}
+kable(round(prop.table(table(acc, num_target_test), margin = 2), 3), format = "latex") %>% kable_styling(position = "center")
+```
+
+  
+Hvis der ses på *antallet* af prædikterede kommaer i forhold til hvor mange kommaer der faktisk er i en sætning, så viser diagonalen i nedenstående tabeller hvor stort et antal og hvor høj en accuracy der er inden for hvert antal komma. Dvs. at her kan ses hvor mange og hvor højt et træf der er i sætninger med ingen (0) komma, 1 komma, 2 kommaer osv. Til højre for diagonalen ses de tilfælde, hvor der er prædikteret flere kommaer end det korrekte og til venstre de tilfælde hvor der er prædikteret færre. 
+
+```{r, results='asis'}
+tbl_1 <- table(eval_number_acc$label, eval_number_acc$pred)
+tbl_2 <- prop.table(table(eval_number_acc$label, eval_number_acc$pred), margin = 1)
+
+kable(tbl_1, format = "latex") %>% kable_styling(position = "center")
+kable(tbl_2, digits = 3, format = "latex") %>% kable_styling(position = "center")
+```
+
+\newpage
+
+## Model meta data
+```{r}
+model_params_sti <- paste0(model_sti, "/tfruns.d/properties/")
+
+# model params
+samples <- read.table(paste0(model_params_sti, "samples"))[[1]]
+epochs <- read.table(paste0(model_params_sti, "epochs"))[[1]]
+batch_size <- read.table(paste0(model_params_sti, "batch_size"))[[1]]
+learning_rate <- read.table(paste0(model_params_sti, "learning_rate"))[[1]]
+loss_function <- paste(read.table(paste0(model_params_sti, "loss_function"))[[1]], collapse = ", ")
+optimizer <- read.table(paste0(model_params_sti, "optimizer"))[[1]]
+
+# model metrics
+metrics <- fromJSON(file = paste0(model_sti, "/tfruns.d/metrics.json"))
+metrics <- metrics[c("loss", "val_loss")]
+metrics <- lapply(metrics, unlist) %>% dplyr::bind_rows()
+```
+
+Modellen er trænet med følgende parametre:
+
+Parameter | Value
+----------|----------
+Samples | `r samples`
+Epochs  | `r epochs`
+Batch size | `r batch_size`
+Learning rate | `r learning_rate`
+Loss function(s) | `r loss_function`
+Optimizer | `r optimizer`
+
+
+Model metrics kan ses her:
+```{r}
+kable(metrics, format = "latex") %>% kable_styling(position = "center")
+```
+
+
+Model arkitektur:
+```{r}
+summary(model)
+```
+
+
