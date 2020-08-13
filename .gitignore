@@ -4,5 +4,12 @@
 .Ruserdata
 KommaModel.Rproj
 .pdf
-.rda
-.h5
+*.rda
+*.h5
+*.pdf
+runs
+*.rds
+*.csv
+*.txt
+*.xml
+*raw.R
