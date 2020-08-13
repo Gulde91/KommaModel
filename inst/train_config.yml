@@ -1,0 +1,46 @@
+trainingInput:
+  scaleTier: CUSTOM
+  masterType: large_model
+  runtimeVersion: "1.14" # bruger 1.14 fordi den version kan hentes tilbage
+  pythonVersion: "2.7"
+  hyperparameters:
+   goal: MINIMIZE # MINIMIZE
+   hyperparameterMetricTag: val_loss # acc
+   maxTrials: 2
+   maxParallelTrials: 1
+   params:
+     - parameterName: embeddin_word
+       type: INTEGER
+       minValue: 64
+       maxValue: 128
+       scaleType: UNIT_LINEAR_SCALE
+     - parameterName: layer_word_lstm_1
+       type: INTEGER
+       minValue: 64
+       maxValue: 64
+       scaleType: UNIT_LINEAR_SCALE
+     - parameterName: layer_word_lstm_2
+       type: INTEGER
+       minValue: 64
+       maxValue: 64
+       scaleType: UNIT_LINEAR_SCALE
+     - parameterName: layer_word_lstm_3
+       type: INTEGER
+       minValue: 64
+       maxValue: 64
+       scaleType: UNIT_LINEAR_SCALE
+     - parameterName: embeddin_word_class
+       type: INTEGER
+       minValue: 32
+       maxValue: 32
+       scaleType: UNIT_LINEAR_SCALE
+     - parameterName: layer_word_class_lstm_1
+       type: INTEGER
+       minValue: 16
+       maxValue: 16
+       scaleType: UNIT_LINEAR_SCALE
+     - parameterName: layer_word_class_lstm_2
+       type: INTEGER
+       minValue: 16
+       maxValue: 16
+       scaleType: UNIT_LINEAR_SCALE
