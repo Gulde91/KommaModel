@@ -11,3 +11,5 @@ df <- dplyr::bind_rows(data_list)
 library(jsonlite)
 
 data <- jsonlite::fromJSON("~/model_log.json")
+
+
