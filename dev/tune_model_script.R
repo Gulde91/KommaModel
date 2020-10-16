@@ -35,7 +35,6 @@ num_target_train <- as.matrix(num_target_train)
 num_target_val <- suppressMessages(read_csv(file.path(data_dir, "num_target_val.csv")))
 num_target_val <- as.matrix(num_target_val)
 
-
 message("Setting pad length")
 pad_len <- ncol(train_word)
 
@@ -111,7 +110,7 @@ model %>% compile(
   optimizer = "adam", # optimizer_rmsprop(), rmsprop
   loss = list("categorical_crossentropy", "mse"),
   loss_weights = list(1, 0.5),
-  metric = c("accuracy") # mae
+  metric = c("acc") # mae
 )
 
 history <- model %>% fit(list(train_word, train_word_class),

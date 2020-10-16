@@ -8,6 +8,8 @@ trainingInput:
    hyperparameterMetricTag: val_loss # acc
    maxTrials: 2
    maxParallelTrials: 1
+   resumePreviousJobId: [PREVIOUS_JOB_IDENTIFIER]
+   enableTrialEarlyStopping: TRUE
    params:
      - parameterName: embeddin_word
        type: INTEGER

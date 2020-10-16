@@ -31,10 +31,10 @@ library(rjson)
 ## Evaluering af model
 
 ```{r, henter_model}
-model_sti <- paste0("~/Data Science/KommaModelv1/runs/", params$model_folder)
+model_sti <- paste0("~/Data Science/KommaModel/runs/", params$model_folder)
 model <- keras::load_model_hdf5(paste0(model_sti, "/model.h5"))
 ```
-
+Modelobjektet kan findes i mappen `r model_sti`.
 
 ```{r, klargor_data}
 #test_scores_index <- params$test_scor_data$test_scores_index
